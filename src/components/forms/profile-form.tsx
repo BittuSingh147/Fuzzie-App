@@ -1,6 +1,6 @@
 'use client'
 
-import React, { use, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -18,32 +18,47 @@ import { Button } from '../ui/button'
 import { Loader2 } from 'lucide-react'
 
 type Props = {
-  user: any
-  onUpdate?: any
+  user: { name?: string; email?: string } | null
+  onUpdate?: (name: string) => Promise<void>
 }
 
 const ProfileForm = ({ user, onUpdate }: Props) => {
   const [isLoading, setIsLoading] = useState(false)
+  
   const form = useForm<z.infer<typeof EditUserProfileSchema>>({
     mode: 'onChange',
     resolver: zodResolver(EditUserProfileSchema),
     defaultValues: {
-      name: user.name,
-      email: user.email,
+      name: user?.name || '',
+      email: user?.email || '',
     },
   })
 
   const handleSubmit = async (
     values: z.infer<typeof EditUserProfileSchema>
   ) => {
+    if (!onUpdate) return
+    
     setIsLoading(true)
-    await onUpdate(values.name)
-    setIsLoading(false)
+    try {
+      await onUpdate(values.name)
+    } catch (error) {
+      console.error('Update failed', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
-    form.reset({ name: user.name, email: user.email })
-  }, [user])
+    form.reset({ 
+      name: user?.name || '', 
+      email: user?.email || '' 
+    })
+  }, [user, form])
+
+  if (!user) {
+    return null // or a loading state/error message
+  }
 
   return (
     <Form {...form}>
@@ -88,7 +103,7 @@ const ProfileForm = ({ user, onUpdate }: Props) => {
         />
         <Button
           type="submit"
-          className="self-start hover:bg-[#2F006B] hover:text-white "
+          className="self-start hover:bg-[#2F006B] hover:text-white"
         >
           {isLoading ? (
             <>
@@ -100,9 +115,7 @@ const ProfileForm = ({ user, onUpdate }: Props) => {
           )}
         </Button>
       </form>
-      
     </Form>
-    
   )
 }
 
